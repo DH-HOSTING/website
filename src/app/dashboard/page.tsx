@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Server,
@@ -10,6 +12,7 @@ import {
   ShieldCheck,
   FileText,
   KeyRound,
+  LogOut,
 } from "lucide-react";
 
 type PageKey =
@@ -33,23 +36,42 @@ const POLICY_NAV: { label: PageKey; icon: React.ElementType }[] = [
   { label: "Terms of Service", icon: FileText },
 ];
 
-type DashboardUser = {
-  name?: string | null;
-  username?: string;
-  image?: string | null;
-} | null;
+export default function DashboardPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-export default function Dashboard({
-  user,
-  isAdmin,
-  initialView = "Dashboard",
-}: {
-  user: DashboardUser;
-  isAdmin: boolean;
-  initialView?: PageKey;
-}) {
-  const [activePage, setActivePage] = useState<PageKey>(initialView);
+  const [activePage, setActivePage] = useState<PageKey>("Dashboard");
   const [policiesOpen, setPoliciesOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (!session?.user) return;
+
+    fetch("/api/is-admin")
+      .then((res) => res.json())
+      .then((data) => setIsAdmin(Boolean(data.isAdmin)))
+      .catch(() => setIsAdmin(false));
+  }, [session]);
+
+  if (status === "loading" || !session?.user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-neutral-950 text-neutral-400">
+        Loading...
+      </div>
+    );
+  }
+
+  const user = session.user as {
+    name?: string | null;
+    username?: string;
+    image?: string | null;
+  };
 
   return (
     <div className="flex h-screen w-full bg-neutral-950 text-neutral-100">
@@ -76,12 +98,8 @@ export default function Dashboard({
         {isAdmin && (
           <div className="px-3">
             <button
-              onClick={() => setActivePage("Admin")}
-              className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                activePage === "Admin"
-                  ? "bg-neutral-800 text-amber-300"
-                  : "text-amber-400 hover:bg-neutral-800 hover:text-amber-300"
-              }`}
+              onClick={() => router.push("/admin")}
+              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-amber-400 transition-colors hover:bg-neutral-800 hover:text-amber-300"
             >
               <KeyRound className="h-4 w-4 flex-shrink-0" />
               <span>Admin</span>
@@ -89,7 +107,7 @@ export default function Dashboard({
           </div>
         )}
 
-        {/* Policies dropdown, with breathing room above the profile card */}
+        {/* Policies dropdown */}
         <div className="px-3 pb-4 pt-2">
           <button
             onClick={() => setPoliciesOpen((open) => !open)}
@@ -119,29 +137,34 @@ export default function Dashboard({
           )}
         </div>
 
-        {/* Profile card, pinned to the very bottom */}
-        {user && (
-          <div className="flex items-center gap-3 border-t border-neutral-800 px-4 py-3">
-            {user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={user.image}
-                alt=""
-                className="h-9 w-9 flex-shrink-0 rounded-full"
-              />
-            ) : (
-              <div className="h-9 w-9 flex-shrink-0 rounded-full bg-neutral-700" />
-            )}
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-neutral-100">
-                {user.name}
-              </p>
-              <p className="truncate text-xs text-neutral-500">
-                @{user.username}
-              </p>
-            </div>
+        {/* Profile card */}
+        <div className="flex items-center gap-3 border-t border-neutral-800 px-4 py-3">
+          {user.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.image}
+              alt=""
+              className="h-9 w-9 flex-shrink-0 rounded-full"
+            />
+          ) : (
+            <div className="h-9 w-9 flex-shrink-0 rounded-full bg-neutral-700" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-neutral-100">
+              {user.name}
+            </p>
+            <p className="truncate text-xs text-neutral-500">
+              @{user.username}
+            </p>
           </div>
-        )}
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            title="Sign Out"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-red-400"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </aside>
 
       {/* Main content */}
