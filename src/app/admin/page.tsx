@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import Link from "next/link";
+import { auth, signOut } from "@/auth";
 import { isDiscordUserAdmin } from "@/lib/supabase";
 
 export default async function AdminPage() {
@@ -63,13 +64,36 @@ export default async function AdminPage() {
       </aside>
 
       <main className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center border-b border-neutral-800 px-6">
+        <header className="flex h-16 items-center justify-between border-b border-neutral-800 px-6">
           <div>
             <h1 className="text-lg font-semibold text-neutral-100">
               Admin Dashboard
             </h1>
 
             <p className="text-xs text-neutral-500">Manage DH Modmail</p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="rounded-md border border-neutral-700 px-3 py-1.5 text-sm text-neutral-200 hover:bg-neutral-800"
+            >
+              Back to Dashboard
+            </Link>
+
+            <form
+              action={async () => {
+                "use server";
+                await signOut({ redirectTo: "/login" });
+              }}
+            >
+              <button
+                type="submit"
+                className="rounded-md bg-red-600/90 px-3 py-1.5 text-sm text-white hover:bg-red-600"
+              >
+                Sign Out
+              </button>
+            </form>
           </div>
         </header>
 
