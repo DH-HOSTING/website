@@ -9,6 +9,7 @@ import {
   HelpCircle,
   ShieldCheck,
   FileText,
+  KeyRound,
 } from "lucide-react";
 
 type PageKey =
@@ -17,7 +18,8 @@ type PageKey =
   | "Settings"
   | "FAQs"
   | "Privacy Policy"
-  | "Terms of Service";
+  | "Terms of Service"
+  | "Admin";
 
 const MAIN_NAV: { label: PageKey; icon: React.ElementType }[] = [
   { label: "My Instances", icon: Server },
@@ -31,8 +33,22 @@ const POLICY_NAV: { label: PageKey; icon: React.ElementType }[] = [
   { label: "Terms of Service", icon: FileText },
 ];
 
-export default function Page() {
-  const [activePage, setActivePage] = useState<PageKey>("Dashboard");
+type DashboardUser = {
+  name?: string | null;
+  username?: string;
+  image?: string | null;
+} | null;
+
+export default function Dashboard({
+  user,
+  isAdmin,
+  initialView = "Dashboard",
+}: {
+  user: DashboardUser;
+  isAdmin: boolean;
+  initialView?: PageKey;
+}) {
+  const [activePage, setActivePage] = useState<PageKey>(initialView);
   const [policiesOpen, setPoliciesOpen] = useState(false);
 
   return (
@@ -57,8 +73,24 @@ export default function Page() {
           ))}
         </nav>
 
-        {/* Policies dropdown, pinned to bottom */}
-        <div className="border-t border-neutral-800 p-3">
+        {isAdmin && (
+          <div className="px-3">
+            <button
+              onClick={() => setActivePage("Admin")}
+              className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+                activePage === "Admin"
+                  ? "bg-neutral-800 text-amber-300"
+                  : "text-amber-400 hover:bg-neutral-800 hover:text-amber-300"
+              }`}
+            >
+              <KeyRound className="h-4 w-4 flex-shrink-0" />
+              <span>Admin</span>
+            </button>
+          </div>
+        )}
+
+        {/* Policies dropdown, with breathing room above the profile card */}
+        <div className="px-3 pb-4 pt-2">
           <button
             onClick={() => setPoliciesOpen((open) => !open)}
             className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-100"
@@ -86,6 +118,30 @@ export default function Page() {
             </div>
           )}
         </div>
+
+        {/* Profile card, pinned to the very bottom */}
+        {user && (
+          <div className="flex items-center gap-3 border-t border-neutral-800 px-4 py-3">
+            {user.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.image}
+                alt=""
+                className="h-9 w-9 flex-shrink-0 rounded-full"
+              />
+            ) : (
+              <div className="h-9 w-9 flex-shrink-0 rounded-full bg-neutral-700" />
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-neutral-100">
+                {user.name}
+              </p>
+              <p className="truncate text-xs text-neutral-500">
+                @{user.username}
+              </p>
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* Main content */}
