@@ -1,109 +1,41 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
-import Topbar from "../Topbar";
-
-const VALID_USERNAME = "Ducker";
-const VALID_PASSWORD = "bertiem2011";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
-    setSubmitting(true);
-
-    if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-      router.push("/dashboard");
-      return;
-    }
-
-    setError("Incorrect username or password.");
-    setSubmitting(false);
-  };
-
   return (
-    <main className="relative min-h-screen bg-black text-white">
-      {/* Same continuous grid background as the homepage */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
-          backgroundSize: "90px 90px",
-        }}
-      />
+    <div className="flex h-screen w-full items-center justify-center bg-neutral-950">
+      <div className="w-full max-w-sm rounded-xl bg-neutral-800 p-8 shadow-lg">
+        <h1 className="mb-6 text-center text-lg font-medium text-neutral-100">
+          Sign in
+        </h1>
 
-      <Topbar />
+        <button
+          onClick={() => signIn("discord", { callbackUrl: "/dashboard" })}
+          className="flex w-full items-center justify-center gap-3 rounded-md bg-[#5865F2] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4752C4]"
+        >
+          <DiscordLogo className="h-5 w-5" />
+          Log in with Discord
+        </button>
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-6 pt-24">
-        <div className="w-full max-w-sm rounded-2xl border border-violet-700/50 bg-violet-900/10 p-8 shadow-lg shadow-black/40">
-          <h1 className="text-2xl font-bold text-center">Log In</h1>
-          <p className="mt-2 text-sm text-white/60 text-center">
-            Enter your details to access your dashboard.
-          </p>
-
-          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-            <div>
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-white/70 mb-1.5"
-              >
-                Username
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full rounded-lg border border-violet-700/50 bg-black/60 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none transition-colors duration-200 focus:border-violet-500"
-                placeholder="Enter username"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-white/70 mb-1.5"
-              >
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-violet-700/50 bg-black/60 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none transition-colors duration-200 focus:border-violet-500"
-                placeholder="Enter password"
-              />
-            </div>
-
-            {error && (
-              <p className="text-sm text-red-400" role="alert">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full inline-flex items-center justify-center rounded-lg bg-violet-800 px-6 py-2.5 font-semibold text-white shadow-lg shadow-violet-900/40 transition-transform duration-300 ease-out hover:scale-[1.02] hover:bg-violet-700 disabled:opacity-60 disabled:hover:scale-100"
-            >
-              {submitting ? "Logging in..." : "Log In"}
-            </button>
-          </form>
-        </div>
+        <p className="mt-4 text-center text-xs text-neutral-500">
+          You must be a member of our Discord server in order to access your
+          account.
+        </p>
       </div>
-    </main>
+    </div>
+  );
+}
+
+function DiscordLogo({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.375-.444.865-.608 1.25a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.25.077.077 0 0 0-.079-.037c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026 13.83 13.83 0 0 0 1.226-1.963.074.074 0 0 0-.041-.104 13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.246.195.373.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028ZM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.211 0 2.176 1.077 2.157 2.38 0 1.312-.955 2.38-2.157 2.38Zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38Z" />
+    </svg>
   );
 }
