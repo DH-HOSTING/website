@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { isDiscordUserAdmin } from "@/lib/supabase";
-import Dashboard from "@/components/Dashboard";
+import Dashboard from "@/app/dashboard/page";
 
 export default async function AdminPage() {
   const session = await auth();
