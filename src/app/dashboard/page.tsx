@@ -13,6 +13,9 @@ import {
   FileText,
   KeyRound,
   LogOut,
+  Cpu,
+  MemoryStick,
+  HardDrive,
 } from "lucide-react";
 
 type PageKey =
@@ -168,11 +171,109 @@ export default function DashboardPage() {
       </aside>
 
       {/* Main content */}
-      <main className="flex flex-1 items-center justify-center">
-        <h1 className="text-2xl font-medium text-neutral-200">
-          {activePage} — Coming Soon
-        </h1>
+      <main className="flex flex-1 flex-col overflow-y-auto">
+        <div className="px-8 py-8">
+          <h1 className="text-2xl font-semibold text-neutral-100">
+            Hey, {user.username ?? user.name ?? "there"}
+          </h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            Here is an overview of your hosted modmail instances
+          </p>
+
+          {/* Stat cards */}
+          <div className="mt-6 grid grid-cols-4 gap-4">
+            <StatCard label="Instances" value="1" />
+            <StatCard label="Running" value="0" muted />
+            <StatCard label="Expiring Soon" value="0" muted />
+            <StatCard label="Expired" value="0" />
+          </div>
+
+          {/* Server list */}
+          <div className="mt-8">
+            <h2 className="mb-3 text-sm font-medium text-neutral-300">
+              My Instances
+            </h2>
+
+            <ServerCard />
+          </div>
+        </div>
       </main>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  muted,
+}: {
+  label: string;
+  value: string;
+  muted?: boolean;
+}) {
+  return (
+    <div className="rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-4">
+      <p className="text-xs uppercase tracking-wide text-neutral-500">
+        {label}
+      </p>
+      <p
+        className={`mt-2 text-2xl font-semibold ${
+          muted ? "text-neutral-600" : "text-neutral-100"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function ServerCard() {
+  return (
+    <div className="relative overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900">
+      <div className="absolute inset-x-0 top-0 h-1 bg-red-500" />
+
+      <div className="absolute right-4 top-4 rounded-full bg-red-500 px-3 py-1 text-xs font-medium text-white">
+        Offline
+      </div>
+
+      <div className="px-5 pb-4 pt-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-neutral-800 text-neutral-400">
+            <Server className="h-4 w-4" />
+          </div>
+          <span className="text-sm font-medium text-neutral-100">
+            PLACEHOLDER MODMAIL
+          </span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          <SpecBadge icon={Cpu} value="0%" />
+          <SpecBadge icon={MemoryStick} value="0 MiB" />
+          <SpecBadge icon={HardDrive} value="0 MiB" />
+        </div>
+
+        <button
+          type="button"
+          className="mt-4 w-full rounded-md border border-neutral-700 py-2 text-sm text-neutral-200 transition-colors hover:bg-neutral-800"
+        >
+          Manage Server
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SpecBadge({
+  icon: Icon,
+  value,
+}: {
+  icon: React.ElementType;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-center gap-2 rounded-md bg-neutral-800/60 py-2 text-xs text-neutral-300">
+      <Icon className="h-3.5 w-3.5 text-neutral-500" />
+      <span>{value}</span>
     </div>
   );
 }

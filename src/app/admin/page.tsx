@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, LogOut } from "lucide-react";
+import { ArrowLeft, LogOut, Server, FileText, Users } from "lucide-react";
 import { auth, signOut } from "@/auth";
 import { isDiscordUserAdmin } from "@/lib/supabase";
 
@@ -33,7 +33,57 @@ export default async function AdminPage() {
           >
             <span>Admin Dashboard</span>
           </button>
+
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-neutral-300 transition-colors hover:bg-neutral-800/60 hover:text-neutral-100"
+          >
+            <Server className="h-4 w-4 flex-shrink-0" />
+            <span>Modmail Servers</span>
+          </button>
+
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-neutral-300 transition-colors hover:bg-neutral-800/60 hover:text-neutral-100"
+          >
+            <FileText className="h-4 w-4 flex-shrink-0" />
+            <span>Logs</span>
+          </button>
+
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-neutral-300 transition-colors hover:bg-neutral-800/60 hover:text-neutral-100"
+          >
+            <Users className="h-4 w-4 flex-shrink-0" />
+            <span>Accounts</span>
+          </button>
         </nav>
+
+        {/* Back to Dashboard + Sign Out */}
+        <div className="flex flex-col gap-1 border-t border-neutral-800 p-3">
+          <Link
+            href="/dashboard"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-neutral-300 transition-colors hover:bg-neutral-800/60 hover:text-neutral-100"
+          >
+            <ArrowLeft className="h-4 w-4 flex-shrink-0" />
+            <span>Back to Dashboard</span>
+          </Link>
+
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/login" });
+            }}
+          >
+            <button
+              type="submit"
+              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-red-500 transition-colors hover:bg-red-500/10 hover:text-red-400"
+            >
+              <LogOut className="h-4 w-4 flex-shrink-0" />
+              <span>Sign Out</span>
+            </button>
+          </form>
+        </div>
 
         <div className="border-t border-neutral-800 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -65,38 +115,13 @@ export default async function AdminPage() {
       </aside>
 
       <main className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-neutral-800 px-6">
+        <header className="flex h-16 items-center border-b border-neutral-800 px-6">
           <div>
             <h1 className="text-lg font-semibold text-neutral-100">
               Admin Dashboard
             </h1>
 
             <p className="text-xs text-neutral-500">Manage DH Modmail</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard"
-              title="Back to Dashboard"
-              className="flex h-9 w-9 items-center justify-center rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/login" });
-              }}
-            >
-              <button
-                type="submit"
-                title="Sign Out"
-                className="flex h-9 w-9 items-center justify-center rounded-md bg-red-600/90 text-white hover:bg-red-600"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            </form>
           </div>
         </header>
 
