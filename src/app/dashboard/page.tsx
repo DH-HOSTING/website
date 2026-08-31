@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Server,
-  Settings,
   ChevronDown,
   HelpCircle,
   ShieldCheck,
@@ -19,18 +18,16 @@ import {
 } from "lucide-react";
 
 type PageKey =
-  | "My Instances"
+  | "Modmail Instances"
   | "Dashboard"
-  | "Settings"
   | "FAQs"
   | "Privacy Policy"
   | "Terms of Service"
   | "Admin";
 
 const MAIN_NAV: { label: PageKey; icon: React.ElementType }[] = [
-  { label: "My Instances", icon: Server },
+  { label: "Modmail Instances", icon: Server },
   { label: "Dashboard", icon: LayoutDashboard },
-  { label: "Settings", icon: Settings },
 ];
 
 const POLICY_NAV: { label: PageKey; icon: React.ElementType }[] = [
@@ -43,8 +40,8 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [activePage, setActivePage] = useState<PageKey>("Dashboard");
-  const [policiesOpen, setPoliciesOpen] = useState(false);
+  const [activePage, setActivePage] = useState<PageKey>("Modmail Instances");
+  const [policiesOpen, setPoliciesOpen] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -96,25 +93,26 @@ export default function DashboardPage() {
               onClick={() => setActivePage(label)}
             />
           ))}
-        </nav>
 
-        {isAdmin && (
-          <div className="px-3">
-            <button
-              onClick={() => router.push("/admin")}
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-amber-400 transition-colors hover:bg-neutral-800 hover:text-amber-300"
-            >
-              <KeyRound className="h-4 w-4 flex-shrink-0" />
-              <span>Admin</span>
-            </button>
-          </div>
-        )}
+          {isAdmin && (
+            <>
+              <div className="my-2 border-t border-neutral-800" />
+              <button
+                onClick={() => router.push("/admin")}
+                className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-amber-400 transition-colors hover:bg-neutral-800 hover:text-amber-300"
+              >
+                <KeyRound className="h-4 w-4 flex-shrink-0" />
+                <span>Admin</span>
+              </button>
+            </>
+          )}
 
-        {/* Policies dropdown */}
-        <div className="px-3 pb-4 pt-2">
+          <div className="my-2 border-t border-neutral-800" />
+
+          {/* Policies dropdown */}
           <button
             onClick={() => setPoliciesOpen((open) => !open)}
-            className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-100"
+            className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-100"
           >
             <span>Policies</span>
             <ChevronDown
@@ -125,7 +123,7 @@ export default function DashboardPage() {
           </button>
 
           {policiesOpen && (
-            <div className="mt-1 flex flex-col gap-1">
+            <div className="flex flex-col gap-1">
               {POLICY_NAV.map(({ label, icon: Icon }) => (
                 <NavButton
                   key={label}
@@ -138,7 +136,7 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
-        </div>
+        </nav>
 
         {/* Profile card */}
         <div className="flex items-center gap-3 border-t border-neutral-800 px-4 py-3">
@@ -174,55 +172,23 @@ export default function DashboardPage() {
       <main className="flex flex-1 flex-col overflow-y-auto">
         <div className="px-8 py-8">
           <h1 className="text-2xl font-semibold text-neutral-100">
-            Hey, {user.username ?? user.name ?? "there"}
+            Welcome back, @{user.username ?? user.name ?? "there"}
           </h1>
           <p className="mt-1 text-sm text-neutral-500">
-            Here is an overview of your hosted modmail instances
+            Manage all owned modmail instances. If you require support don't
+            hesitate to reach out!
           </p>
-
-          {/* Stat cards */}
-          <div className="mt-6 grid grid-cols-4 gap-4">
-            <StatCard label="Instances" value="1" />
-            <StatCard label="Running" value="0" muted />
-            <StatCard label="Expiring Soon" value="0" muted />
-            <StatCard label="Expired" value="0" />
-          </div>
 
           {/* Server list */}
           <div className="mt-8">
             <h2 className="mb-3 text-sm font-medium text-neutral-300">
-              My Instances
+              Modmail Instances
             </h2>
 
             <ServerCard />
           </div>
         </div>
       </main>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  muted,
-}: {
-  label: string;
-  value: string;
-  muted?: boolean;
-}) {
-  return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-4">
-      <p className="text-xs uppercase tracking-wide text-neutral-500">
-        {label}
-      </p>
-      <p
-        className={`mt-2 text-2xl font-semibold ${
-          muted ? "text-neutral-600" : "text-neutral-100"
-        }`}
-      >
-        {value}
-      </p>
     </div>
   );
 }
@@ -295,7 +261,7 @@ function NavButton({
     <button
       onClick={onClick}
       className={`flex items-center gap-3 rounded-md px-3 text-sm transition-colors ${
-        compact ? "py-1.5 pl-6 text-neutral-400" : "py-2 text-neutral-300"
+        compact ? "py-2 pl-6 text-neutral-400" : "py-2.5 text-neutral-300"
       } ${
         active
           ? "bg-neutral-800 text-neutral-100"
