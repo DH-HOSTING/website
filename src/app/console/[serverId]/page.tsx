@@ -252,7 +252,6 @@ export default function ConsolePage() {
 
     try {
       setActionLoading(true);
-      setError("");
 
       const response = await fetch(
         `/api/console/${encodeURIComponent(serverId)}`,
@@ -319,7 +318,6 @@ export default function ConsolePage() {
     try {
       setSavingEnvironment(true);
       setEnvironmentSaved(false);
-      setError("");
 
       const response = await fetch(
         `/api/console/${encodeURIComponent(serverId)}`,
@@ -512,18 +510,11 @@ export default function ConsolePage() {
       </div>
 
       {error && (
-        <div className="mx-6 mt-4 flex items-center justify-between rounded-md border border-red-900/60 bg-red-950/30 px-4 py-3 text-sm text-red-300">
-          <div className="flex items-center gap-2">
-            <XCircle className="h-4 w-4 flex-shrink-0" />
-            <span>{error}</span>
+        <div className="mx-6 mt-4 rounded-md border border-red-900/60 bg-red-950/30 px-4 py-3 text-sm text-red-300">
+          <div className="flex items-start gap-2">
+            <XCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <span className="whitespace-pre-wrap break-words">{error}</span>
           </div>
-
-          <button
-            onClick={() => setError("")}
-            className="text-red-400 hover:text-red-200"
-          >
-            Dismiss
-          </button>
         </div>
       )}
 
