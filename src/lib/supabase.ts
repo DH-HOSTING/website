@@ -19,3 +19,17 @@ export async function isDiscordUserAdmin(discordId: string): Promise<boolean> {
   if (error || !data) return false;
   return Boolean(data.Admin);
 }
+
+export async function isServerOwner(
+  discordId: string,
+  serverId: string
+): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from("Servers")
+    .select("OwnerDiscordId")
+    .eq("ServerId", serverId)
+    .maybeSingle();
+
+  if (error || !data) return false;
+  return data.OwnerDiscordId === discordId;
+}
