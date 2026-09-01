@@ -13,9 +13,6 @@ import {
   FileText,
   KeyRound,
   LogOut,
-  Cpu,
-  MemoryStick,
-  HardDrive,
 } from "lucide-react";
 
 // Client-side Supabase client using the anon/publishable key.
@@ -35,6 +32,7 @@ type PageKey =
   | "Admin";
 
 type ModmailInstance = {
+  id: string;
   user_id: string;
   name: string | null;
   status: string | null;
@@ -85,7 +83,7 @@ export default function DashboardPage() {
 
     supabaseBrowser
       .from("modmail_instances")
-      .select("user_id, name, status")
+      .select("id, user_id, name, status")
       .eq("user_id", discordId)
       .then(({ data, error }) => {
         if (error) {
@@ -232,9 +230,10 @@ export default function DashboardPage() {
               </p>
             ) : (
               <div className="flex flex-col gap-3">
-                {instances.map((instance, i) => (
+                {instances.map((instance) => (
                   <ServerCard
-                    key={`${instance.user_id}-${i}`}
+                    key={instance.id}
+                    id={instance.id}
                     name={instance.name ?? "UNNAMED MODMAIL"}
                     status={instance.status}
                   />
@@ -249,12 +248,15 @@ export default function DashboardPage() {
 }
 
 function ServerCard({
+  id,
   name,
   status,
 }: {
+  id: string;
   name: string;
   status: string | null;
 }) {
+  const router = useRouter();
   const isOnline = (status ?? "").toLowerCase() === "online";
 
   return (
@@ -281,34 +283,14 @@ function ServerCard({
           <span className="text-sm font-medium text-neutral-100">{name}</span>
         </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          <SpecBadge icon={Cpu} value="0%" />
-          <SpecBadge icon={MemoryStick} value="0 MiB" />
-          <SpecBadge icon={HardDrive} value="0 MiB" />
-        </div>
-
         <button
           type="button"
+          onClick={() => router.push(`/console/${id}`)}
           className="mt-4 w-full rounded-md border border-neutral-700 py-2 text-sm text-neutral-200 transition-colors hover:bg-neutral-800"
         >
           Manage Server
         </button>
       </div>
-    </div>
-  );
-}
-
-function SpecBadge({
-  icon: Icon,
-  value,
-}: {
-  icon: React.ElementType;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center justify-center gap-2 rounded-md bg-neutral-800/60 py-2 text-xs text-neutral-300">
-      <Icon className="h-3.5 w-3.5 text-neutral-500" />
-      <span>{value}</span>
     </div>
   );
 }
