@@ -145,7 +145,7 @@ export default function ConsolePage() {
       setError("");
 
       const query = new URLSearchParams({
-        view: "logs",
+        action: "logs",
         tail: "1000",
       });
 
@@ -329,7 +329,7 @@ export default function ConsolePage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            action: "saveEnvironment",
+            action: "save-env",
             environment: {
               TOKEN: botToken,
               GUILD_ID: guildId,
