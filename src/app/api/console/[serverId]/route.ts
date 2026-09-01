@@ -177,26 +177,40 @@ function normaliseOwners(value: unknown): string {
 }
 
 async function readApplicationEnvironment(
-applicationId: string
+  applicationId: string
 ): Promise<EnvValues> {
-  const response = await dokployRequest(
-    `application.one?applicationId=${encodeURIComponent(applicationId)}`
-  );
+  try {
+    const endpoint = `application.one?applicationId=${encodeURIComponent(applicationId)}`;
+    console.log("[CONSOLE] Calling Dokploy:", endpoint);
+    
+    const response = await dokployRequest(endpoint);
 
-  if (!response.ok) {
-    const text = await response.text();
+    if (!response.ok) {
+      const text = await response.text();
 
+      console.error(
+        "[CONSOLE] Dokploy API returned error:",
+        response.status,
+        text
+      );
+
+      throw new Error(`Dokploy API error ${response.status}: ${text}`);
+    }
+
+    const data = (await response.json()) as DokployResponse;
+    console.log("[CONSOLE] Dokploy response data:", data);
+    
+    return parseEnvFromResponse(data);
+  } catch (error) {
     console.error(
-      "[CONSOLE] Failed to read Dokploy application:",
-      response.status,
-      text
+      "[CONSOLE] readApplicationEnvironment error:",
+      error instanceof Error ? error.message : error
     );
-
-    throw new Error("Failed to read Dokploy application");
+    throw error;
   }
+}
 
-  const data = (await response.json()) as DokployResponse;
-
+function parseEnvFromResponse(data: DokployResponse): EnvValues {
   const possibleEnv =
     typeof data.env === "string"
       ? data.env
@@ -217,35 +231,44 @@ applicationId: string
 }
 
 async function saveApplicationEnvironment(
-applicationId: string,
-values: EnvValues
+  applicationId: string,
+  values: EnvValues
 ): Promise<void> {
-  const env = createEnvText(values);
+  try {
+    const env = createEnvText(values);
 
-  const response = await dokployRequest(
-    "application.saveEnvironment",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        applicationId,
-        env,
-        buildArgs: "",
-        buildSecrets: "",
-        createEnvFile: true,
-      }),
-    }
-  );
+    console.log("[CONSOLE] Calling saveEnvironment endpoint");
 
-  if (!response.ok) {
-    const text = await response.text();
-
-    console.error(
-      "[CONSOLE] Dokploy environment save failed:",
-      response.status,
-      text
+    const response = await dokployRequest(
+      "application.saveEnvironment",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          applicationId,
+          env,
+          buildArgs: "",
+          buildSecrets: "",
+          createEnvFile: true,
+        }),
+      }
     );
 
-    throw new Error("Failed to save environment");
+    if (!response.ok) {
+      const text = await response.text();
+
+      console.error(
+        "[CONSOLE] Dokploy environment save failed:",
+        response.status,
+        text
+      );
+
+      throw new Error(`Failed to save environment: ${response.status} ${text}`);
+    }
+
+    console.log("[CONSOLE] Environment saved to Dokploy");
+  } catch (error) {
+    console.error("[CONSOLE] saveApplicationEnvironment error:", error);
+    throw error;
   }
 }
 
@@ -403,86 +426,114 @@ export async function POST(
      * START
      */
     if (action === "start") {
-      const response = await dokployRequest(
-        "application.start",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            applicationId: instance.dokploy_application_id,
-          }),
+      try {
+        console.log(
+          "[CONSOLE] Starting application:",
+          instance.dokploy_application_id
+        );
+
+        const response = await dokployRequest(
+          "application.start",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              applicationId: instance.dokploy_application_id,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const text = await response.text();
+
+          console.error(
+            "[CONSOLE] Dokploy start failed:",
+            response.status,
+            text
+          );
+
+          return NextResponse.json(
+            {
+              error: `Failed to start application: ${text}`,
+            },
+            { status: 502 }
+          );
         }
-      );
 
-      if (!response.ok) {
-        const text = await response.text();
+        console.log("[CONSOLE] Application started successfully");
 
-        console.error(
-          "[CONSOLE] Dokploy start failed:",
-          response.status,
-          text
-        );
+        await supabaseAdmin
+          .from("modmail_instances")
+          .update({
+            status: "running",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", instance.id);
 
-        return NextResponse.json(
-          { error: "Failed to start application" },
-          { status: 502 }
-        );
-      }
-
-      await supabaseAdmin
-        .from("modmail_instances")
-        .update({
+        return NextResponse.json({
+          success: true,
           status: "running",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", instance.id);
-
-      return NextResponse.json({
-        success: true,
-        status: "running",
-      });
+        });
+      } catch (err) {
+        console.error("[CONSOLE] Start action error:", err);
+        throw err;
+      }
     }
 
     /*
      * STOP
      */
     if (action === "stop") {
-      const response = await dokployRequest(
-        "application.stop",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            applicationId: instance.dokploy_application_id,
-          }),
+      try {
+        console.log(
+          "[CONSOLE] Stopping application:",
+          instance.dokploy_application_id
+        );
+
+        const response = await dokployRequest(
+          "application.stop",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              applicationId: instance.dokploy_application_id,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const text = await response.text();
+
+          console.error(
+            "[CONSOLE] Dokploy stop failed:",
+            response.status,
+            text
+          );
+
+          return NextResponse.json(
+            {
+              error: `Failed to stop application: ${text}`,
+            },
+            { status: 502 }
+          );
         }
-      );
 
-      if (!response.ok) {
-        const text = await response.text();
+        console.log("[CONSOLE] Application stopped successfully");
 
-        console.error(
-          "[CONSOLE] Dokploy stop failed:",
-          response.status,
-          text
-        );
+        await supabaseAdmin
+          .from("modmail_instances")
+          .update({
+            status: "stopped",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", instance.id);
 
-        return NextResponse.json(
-          { error: "Failed to stop application" },
-          { status: 502 }
-        );
-      }
-
-      await supabaseAdmin
-        .from("modmail_instances")
-        .update({
+        return NextResponse.json({
+          success: true,
           status: "stopped",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", instance.id);
-
-      return NextResponse.json({
-        success: true,
-        status: "stopped",
-      });
+        });
+      } catch (err) {
+        console.error("[CONSOLE] Stop action error:", err);
+        throw err;
+      }
     }
 
     /*
@@ -492,50 +543,64 @@ export async function POST(
      * and asks Dokploy to create/update the .env file.
      */
     if (action === "save-env") {
-      const currentEnv = await readApplicationEnvironment(
-        instance.dokploy_application_id
-      );
+      try {
+        console.log(
+          "[CONSOLE] Reading current environment from:",
+          instance.dokploy_application_id
+        );
 
-      const incomingEnv = body.env || {};
+        const currentEnv = await readApplicationEnvironment(
+          instance.dokploy_application_id
+        );
 
-      const updatedEnv: EnvValues = {
-        TOKEN:
-          typeof incomingEnv.TOKEN === "string"
-            ? incomingEnv.TOKEN
-            : currentEnv.TOKEN,
+        const incomingEnv = body.env || {};
 
-        GUILD_ID:
-          typeof incomingEnv.GUILD_ID === "string"
-            ? incomingEnv.GUILD_ID
-            : currentEnv.GUILD_ID,
+        const updatedEnv: EnvValues = {
+          TOKEN:
+            typeof incomingEnv.TOKEN === "string"
+              ? incomingEnv.TOKEN
+              : currentEnv.TOKEN,
 
-        OWNERS:
-          incomingEnv.OWNERS !== undefined
-            ? normaliseOwners(incomingEnv.OWNERS)
-            : currentEnv.OWNERS,
+          GUILD_ID:
+            typeof incomingEnv.GUILD_ID === "string"
+              ? incomingEnv.GUILD_ID
+              : currentEnv.GUILD_ID,
 
-        CONNECTION_URI:
-          typeof incomingEnv.CONNECTION_URI === "string"
-            ? incomingEnv.CONNECTION_URI
-            : currentEnv.CONNECTION_URI,
-      };
+          OWNERS:
+            incomingEnv.OWNERS !== undefined
+              ? normaliseOwners(incomingEnv.OWNERS)
+              : currentEnv.OWNERS,
 
-      await saveApplicationEnvironment(
-        instance.dokploy_application_id,
-        updatedEnv
-      );
+          CONNECTION_URI:
+            typeof incomingEnv.CONNECTION_URI === "string"
+              ? incomingEnv.CONNECTION_URI
+              : currentEnv.CONNECTION_URI,
+        };
 
-      await supabaseAdmin
-        .from("modmail_instances")
-        .update({
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", instance.id);
+        console.log("[CONSOLE] Saving environment to Dokploy");
 
-      return NextResponse.json({
-        success: true,
-        env: updatedEnv,
-      });
+        await saveApplicationEnvironment(
+          instance.dokploy_application_id,
+          updatedEnv
+        );
+
+        console.log("[CONSOLE] Environment saved successfully");
+
+        await supabaseAdmin
+          .from("modmail_instances")
+          .update({
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", instance.id);
+
+        return NextResponse.json({
+          success: true,
+          env: updatedEnv,
+        });
+      } catch (err) {
+        console.error("[CONSOLE] Save environment error:", err);
+        throw err;
+      }
     }
 
     return NextResponse.json(
