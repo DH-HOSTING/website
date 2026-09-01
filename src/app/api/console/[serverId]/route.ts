@@ -39,30 +39,37 @@ const ENV_KEYS = [
 type EnvKey = (typeof ENV_KEYS)[number];
 
 function dokployHeaders(): HeadersInit {
-return {
-"Content-Type": "application/json",
-"x-api-key": DOKPLOY_API_KEY,
-};
+  return {
+    "Content-Type": "application/json",
+    "x-api-key": DOKPLOY_API_KEY,
+  };
+}
+
+function trpcQuery(procedure: string, input: Record<string, unknown>): string {
+  return `${procedure}?input=${encodeURIComponent(JSON.stringify(input))}`;
 }
 
 async function dokployRequest(
-path: string,
-options: RequestInit = {}
+  path: string,
+  options: RequestInit = {}
 ): Promise<Response> {
-if (!DOKPLOY_API_KEY) {
-throw new Error("DOKPLOY_API_KEY is not configured");
-}
+  if (!DOKPLOY_API_KEY) {
+    throw new Error("DOKPLOY_API_KEY is not configured");
+  }
 
-const url = `${DOKPLOY_URL.replace(/\/$/, "")}/api/${path}`;
+  const baseUrl = DOKPLOY_URL.replace(/\/$/, "");
+  const url = `${baseUrl}/api/trpc/${path}`;
 
-return fetch(url, {
-...options,
-headers: {
-...dokployHeaders(),
-...(options.headers || {}),
-},
-cache: "no-store",
-});
+  console.log("[DOKPLOY] Request URL:", url);
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...dokployHeaders(),
+      ...(options.headers || {}),
+    },
+    cache: "no-store",
+  });
 }
 
 async function getInstance(
@@ -180,10 +187,10 @@ async function readApplicationEnvironment(
   applicationId: string
 ): Promise<EnvValues> {
   try {
-    const endpoint = `application.one?applicationId=${encodeURIComponent(applicationId)}`;
-    console.log("[CONSOLE] Calling Dokploy:", endpoint);
-    
-    const response = await dokployRequest(endpoint);
+    const query = trpcQuery("application.one", { applicationId });
+    console.log("[CONSOLE] Calling Dokploy:", query);
+
+    const response = await dokployRequest(query);
 
     if (!response.ok) {
       const text = await response.text();
@@ -199,7 +206,7 @@ async function readApplicationEnvironment(
 
     const data = (await response.json()) as DokployResponse;
     console.log("[CONSOLE] Dokploy response data:", data);
-    
+
     return parseEnvFromResponse(data);
   } catch (error) {
     console.error(
@@ -237,21 +244,18 @@ async function saveApplicationEnvironment(
   try {
     const env = createEnvText(values);
 
-    console.log("[CONSOLE] Calling saveEnvironment endpoint");
+    console.log("[CONSOLE] Calling saveEnvironment for:", applicationId);
 
-    const response = await dokployRequest(
-      "application.saveEnvironment",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          applicationId,
-          env,
-          buildArgs: "",
-          buildSecrets: "",
-          createEnvFile: true,
-        }),
-      }
-    );
+    const response = await dokployRequest("application.saveEnvironment", {
+      method: "POST",
+      body: JSON.stringify({
+        applicationId,
+        env,
+        buildArgs: "",
+        buildSecrets: "",
+        createEnvFile: true,
+      }),
+    });
 
     if (!response.ok) {
       const text = await response.text();
@@ -432,15 +436,12 @@ export async function POST(
           instance.dokploy_application_id
         );
 
-        const response = await dokployRequest(
-          "application.start",
-          {
-            method: "POST",
-            body: JSON.stringify({
-              applicationId: instance.dokploy_application_id,
-            }),
-          }
-        );
+        const response = await dokployRequest("application.start", {
+          method: "POST",
+          body: JSON.stringify({
+            applicationId: instance.dokploy_application_id,
+          }),
+        });
 
         if (!response.ok) {
           const text = await response.text();
@@ -489,15 +490,12 @@ export async function POST(
           instance.dokploy_application_id
         );
 
-        const response = await dokployRequest(
-          "application.stop",
-          {
-            method: "POST",
-            body: JSON.stringify({
-              applicationId: instance.dokploy_application_id,
-            }),
-          }
-        );
+        const response = await dokployRequest("application.stop", {
+          method: "POST",
+          body: JSON.stringify({
+            applicationId: instance.dokploy_application_id,
+          }),
+        });
 
         if (!response.ok) {
           const text = await response.text();
