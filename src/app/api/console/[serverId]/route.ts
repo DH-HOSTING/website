@@ -49,6 +49,20 @@ function trpcQuery(procedure: string, input: Record<string, unknown>): string {
   return `${procedure}?input=${encodeURIComponent(JSON.stringify(input))}`;
 }
 
+function unwrapDokployData(data: DokployResponse): DokployResponse {
+  if (data && typeof data === "object") {
+    const result = (data as DokployResponse).result;
+    if (result && typeof result === "object") {
+      const nested = result as DokployResponse;
+      if ("data" in nested && nested.data && typeof nested.data === "object") {
+        return nested.data as DokployResponse;
+      }
+    }
+  }
+
+  return data;
+}
+
 async function dokployRequest(
   path: string,
   options: RequestInit = {}
@@ -204,7 +218,8 @@ async function readApplicationEnvironment(
       throw new Error(`Dokploy API error ${response.status}: ${text}`);
     }
 
-    const data = (await response.json()) as DokployResponse;
+    const raw = (await response.json()) as DokployResponse;
+    const data = unwrapDokployData(raw);
     console.log("[CONSOLE] Dokploy response data:", data);
 
     return parseEnvFromResponse(data);
@@ -218,11 +233,12 @@ async function readApplicationEnvironment(
 }
 
 function parseEnvFromResponse(data: DokployResponse): EnvValues {
+  const rawData = data && typeof data === "object" ? data : {};
   const possibleEnv =
-    typeof data.env === "string"
-      ? data.env
-      : typeof data.environment === "string"
-      ? data.environment
+    typeof rawData.env === "string"
+      ? rawData.env
+      : typeof rawData.environment === "string"
+      ? rawData.environment
       : "";
 
   if (!possibleEnv) {
@@ -248,12 +264,17 @@ async function saveApplicationEnvironment(
 
     const response = await dokployRequest("application.saveEnvironment", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        applicationId,
-        env,
-        buildArgs: "",
-        buildSecrets: "",
-        createEnvFile: true,
+        input: {
+          applicationId,
+          env,
+          buildArgs: "",
+          buildSecrets: "",
+          createEnvFile: true,
+        },
       }),
     });
 
@@ -308,7 +329,8 @@ export async function GET(
     const { instance } = result;
 
     const url = new URL(request.url);
-    const action = url.searchParams.get("action");
+    const action =
+      url.searchParams.get("action") || url.searchParams.get("view");
 
     /*
      * LOGS
@@ -318,9 +340,11 @@ export async function GET(
      */
     if (action === "logs") {
       const logsResponse = await dokployRequest(
-        `application.readLogs?applicationId=${encodeURIComponent(
-          instance.dokploy_application_id
-        )}&tail=200&since=all`
+        trpcQuery("application.readLogs", {
+          applicationId: instance.dokploy_application_id,
+          tail: 200,
+          since: "all",
+        })
       );
 
       if (!logsResponse.ok) {
@@ -338,10 +362,18 @@ export async function GET(
         );
       }
 
-      const logsData = (await logsResponse.json()) as DokployResponse;
+      const rawLogs = (await logsResponse.json()) as DokployResponse;
+      const logsData = unwrapDokployData(rawLogs);
 
       return NextResponse.json({
-        logs: logsData,
+        logs:
+          typeof logsData?.logs === "string"
+            ? logsData.logs
+            : typeof logsData?.output === "string"
+            ? logsData.output
+            : typeof logsData?.data === "string"
+            ? logsData.data
+            : JSON.stringify(logsData ?? {}),
       });
     }
 
@@ -422,9 +454,11 @@ export async function POST(
     const body = (await request.json()) as {
       action?: string;
       env?: Partial<EnvValues>;
+      environment?: Partial<EnvValues>;
     };
 
-    const action = body.action;
+    const action =
+      body.action === "saveEnvironment" ? "save-env" : body.action;
 
     /*
      * START
@@ -436,12 +470,17 @@ export async function POST(
           instance.dokploy_application_id
         );
 
-        const response = await dokployRequest("application.start", {
-          method: "POST",
-          body: JSON.stringify({
-            applicationId: instance.dokploy_application_id,
-          }),
-        });
+const response = await dokployRequest("application.start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        input: {
+          applicationId: instance.dokploy_application_id,
+        },
+      }),
+    });
 
         if (!response.ok) {
           const text = await response.text();
@@ -490,12 +529,17 @@ export async function POST(
           instance.dokploy_application_id
         );
 
-        const response = await dokployRequest("application.stop", {
-          method: "POST",
-          body: JSON.stringify({
-            applicationId: instance.dokploy_application_id,
-          }),
-        });
+const response = await dokployRequest("application.stop", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        input: {
+          applicationId: instance.dokploy_application_id,
+        },
+      }),
+    });
 
         if (!response.ok) {
           const text = await response.text();
@@ -551,7 +595,7 @@ export async function POST(
           instance.dokploy_application_id
         );
 
-        const incomingEnv = body.env || {};
+        const incomingEnv = body.env || body.environment || {};
 
         const updatedEnv: EnvValues = {
           TOKEN:
