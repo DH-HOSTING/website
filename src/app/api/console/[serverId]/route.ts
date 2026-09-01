@@ -268,13 +268,11 @@ async function saveApplicationEnvironment(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        input: {
-          applicationId,
-          env,
-          buildArgs: "",
-          buildSecrets: "",
-          createEnvFile: true,
-        },
+        applicationId,
+        env,
+        buildArgs: "",
+        buildSecrets: "",
+        createEnvFile: true,
       }),
     });
 
@@ -470,17 +468,15 @@ export async function POST(
           instance.dokploy_application_id
         );
 
-const response = await dokployRequest("application.start", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        input: {
-          applicationId: instance.dokploy_application_id,
-        },
-      }),
-    });
+        const response = await dokployRequest("application.start", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            applicationId: instance.dokploy_application_id,
+          }),
+        });
 
         if (!response.ok) {
           const text = await response.text();
@@ -529,17 +525,15 @@ const response = await dokployRequest("application.start", {
           instance.dokploy_application_id
         );
 
-const response = await dokployRequest("application.stop", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        input: {
-          applicationId: instance.dokploy_application_id,
-        },
-      }),
-    });
+        const response = await dokployRequest("application.stop", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            applicationId: instance.dokploy_application_id,
+          }),
+        });
 
         if (!response.ok) {
           const text = await response.text();
