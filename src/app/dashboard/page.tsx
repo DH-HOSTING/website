@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 import {
   LayoutDashboard,
   Server,
@@ -17,6 +18,14 @@ import {
   HardDrive,
 } from "lucide-react";
 
+// Client-side Supabase client using the anon/publishable key.
+// Safe to expose in browser code ONLY if Row Level Security policies
+// on the queried tables restrict rows to what the requester should see.
+const supabaseBrowser = createClient(
+  "https://vrzuaysachjrginbhgdg.supabase.co",
+  "sb_publishable_65NKLAlG7kDofPxS4H3jAg_YhE6RjQ5"
+);
+
 type PageKey =
   | "Modmail Instances"
   | "Dashboard"
@@ -24,6 +33,12 @@ type PageKey =
   | "Privacy Policy"
   | "Terms of Service"
   | "Admin";
+
+type ModmailInstance = {
+  user_id: string;
+  name: string | null;
+  status: string | null;
+};
 
 const MAIN_NAV: { label: PageKey; icon: React.ElementType }[] = [
   { label: "Modmail Instances", icon: Server },
@@ -44,6 +59,9 @@ export default function DashboardPage() {
   const [policiesOpen, setPoliciesOpen] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const [instances, setInstances] = useState<ModmailInstance[]>([]);
+  const [instancesLoading, setInstancesLoading] = useState(true);
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
@@ -57,6 +75,27 @@ export default function DashboardPage() {
       .then((res) => res.json())
       .then((data) => setIsAdmin(Boolean(data.isAdmin)))
       .catch(() => setIsAdmin(false));
+  }, [session]);
+
+  useEffect(() => {
+    const discordId = (session?.user as { id?: string } | undefined)?.id;
+    if (!discordId) return;
+
+    setInstancesLoading(true);
+
+    supabaseBrowser
+      .from("modmail_instances")
+      .select("user_id, name, status")
+      .eq("user_id", discordId)
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Failed to load modmail instances:", error.message);
+          setInstances([]);
+        } else {
+          setInstances(data ?? []);
+        }
+        setInstancesLoading(false);
+      });
   }, [session]);
 
   if (status === "loading" || !session?.user) {
@@ -185,7 +224,23 @@ export default function DashboardPage() {
               Modmail Instances
             </h2>
 
-            <ServerCard />
+            {instancesLoading ? (
+              <p className="text-sm text-neutral-500">Loading instances...</p>
+            ) : instances.length === 0 ? (
+              <p className="text-sm text-neutral-500">
+                No modmail instances found for your account.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {instances.map((instance, i) => (
+                  <ServerCard
+                    key={`${instance.user_id}-${i}`}
+                    name={instance.name ?? "UNNAMED MODMAIL"}
+                    status={instance.status}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -193,13 +248,29 @@ export default function DashboardPage() {
   );
 }
 
-function ServerCard() {
+function ServerCard({
+  name,
+  status,
+}: {
+  name: string;
+  status: string | null;
+}) {
+  const isOnline = (status ?? "").toLowerCase() === "online";
+
   return (
     <div className="relative overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900">
-      <div className="absolute inset-x-0 top-0 h-1 bg-red-500" />
+      <div
+        className={`absolute inset-x-0 top-0 h-1 ${
+          isOnline ? "bg-emerald-500" : "bg-red-500"
+        }`}
+      />
 
-      <div className="absolute right-4 top-4 rounded-full bg-red-500 px-3 py-1 text-xs font-medium text-white">
-        Offline
+      <div
+        className={`absolute right-4 top-4 rounded-full px-3 py-1 text-xs font-medium text-white ${
+          isOnline ? "bg-emerald-500" : "bg-red-500"
+        }`}
+      >
+        {isOnline ? "Online" : "Offline"}
       </div>
 
       <div className="px-5 pb-4 pt-6">
@@ -207,9 +278,7 @@ function ServerCard() {
           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-neutral-800 text-neutral-400">
             <Server className="h-4 w-4" />
           </div>
-          <span className="text-sm font-medium text-neutral-100">
-            PLACEHOLDER MODMAIL
-          </span>
+          <span className="text-sm font-medium text-neutral-100">{name}</span>
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-3">
